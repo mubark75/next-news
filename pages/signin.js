@@ -1,19 +1,99 @@
-// import Typography from "@material-ui/core/Typography";
-// import Avatar from "@material-ui/core/Avatar";
-// import FormControl from "@material-ui/core/FormControl";
-// import Paper from "@material-ui/core/Paper";
-// import Input from "@material-ui/core/Input";
-// import InputLabel from "@material-ui/core/InputLabel";
-// import Button from "@material-ui/core/Button";
-// import Snackbar from "@material-ui/core/Snackbar";
-// import Lock from "@material-ui/icons/Lock";
+import Typography from "@material-ui/core/Typography";
+import Avatar from "@material-ui/core/Avatar";
+import FormControl from "@material-ui/core/FormControl";
+import Paper from "@material-ui/core/Paper";
+import Input from "@material-ui/core/Input";
+import InputLabel from "@material-ui/core/InputLabel";
+import Button from "@material-ui/core/Button";
+import Snackbar from "@material-ui/core/Snackbar";
+import Lock from "@material-ui/icons/Lock";
 import withStyles from "@material-ui/core/styles/withStyles";
+import { signinUser } from "../lib/auth";
+import Router from "next/router";
 
 class Signin extends React.Component {
-  state = {};
+  state = {
+    email: "",
+    password: "",
+    error: "",
+    openError: false,
+    isLoading: false
+  };
+
+  handleClose = () => this.setState({ openError: false });
+
+  handleChange = e => this.setState({ [e.target.name]: e.target.value });
+
+  handleSubmit = async e => {
+    e.preventDefault();
+    const {
+      state: { email, password }
+    } = this;
+    const user = { email, password };
+    this.setState({ isLoading: true, error: "" });
+    const { error, data } = await signinUser(user);
+    if (!error) {
+      Router.push("/");
+    } else {
+      this.setState({ error: data, openError: true, isLoading: false });
+    }
+  };
 
   render() {
-    return <div>Signin</div>;
+    const {
+      props: { classes },
+      state: { error, openError, isLoading }
+    } = this;
+    return (
+      <div className={classes.root}>
+        <Paper className={classes.paper}>
+          <Avatar className={classes.avatar}>
+            <Lock />
+          </Avatar>
+          <Typography variant="h5" component="h1">
+            Sign in
+          </Typography>
+
+          <form onSubmit={this.handleSubmit} className={classes.form}>
+            <FormControl margin="normal" required fullWidth>
+              <InputLabel htmlFor="email">Email</InputLabel>
+              <Input name="email" type="email" onChange={this.handleChange} />
+            </FormControl>
+            <FormControl margin="normal" required fullWidth>
+              <InputLabel htmlFor="password">Password</InputLabel>
+              <Input
+                name="password"
+                type="password"
+                onChange={this.handleChange}
+              />
+            </FormControl>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              disabled={isLoading}
+              className={classes.submit}
+            >
+              {isLoading ? "Signing in" : "Sign in"}
+            </Button>
+          </form>
+          {/* Error snackbar */}
+          {error && (
+            <Snackbar
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "right"
+              }}
+              open={openError}
+              onClose={this.handleClose}
+              autoHideDuration={6000}
+              message={<span className={classes.snack}>{error}</span>}
+            />
+          )}
+        </Paper>
+      </div>
+    );
   }
 }
 
