@@ -30,7 +30,7 @@ const mongooseOptions = {
 };
 
 // connect to mongodb
-mongoose.connect("mongodb://localhost/theshop", mongooseOptions);
+mongoose.connect("mongodb://localhost/next-connect", mongooseOptions);
 mongoose.Promise = global.Promise;
 
 app.prepare().then(() => {
