@@ -29,16 +29,9 @@ const mongooseOptions = {
   useFindAndModify: false
 };
 
-mongoose
-  .connect(
-    process.env.MONGO_URI,
-    mongooseOptions
-  )
-  .then(() => console.log("DB connected"));
-
-mongoose.connection.on("error", err => {
-  console.log(`DB connection error: ${err.message}`);
-});
+// connect to mongodb
+mongoose.connect("mongodb://localhost/theshop", mongooseOptions);
+mongoose.Promise = global.Promise;
 
 app.prepare().then(() => {
   const server = express();
