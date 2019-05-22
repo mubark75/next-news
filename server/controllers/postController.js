@@ -25,7 +25,7 @@ exports.resizeImage = async (req, res, next) => {
     return next();
   }
   const extension = req.file.mimetype.split("/")[1];
-  req.body.avatar = `/static/uploads/uploads/${
+  req.body.image = `/static/uploads/uploads/${
     req.user.name
   }-${Date.now()}.${extension}`;
   const image = await jimp.read(req.file.buffer);
@@ -44,7 +44,7 @@ exports.addPost = async (req, res) => {
   res.json(post);
 };
 
-exports.getPostById = async (req, res, next) => {
+exports.getPostById = async (req, res, next, id) => {
   const post = await Post.findOne({ _id: id });
   req.post = post;
 
@@ -78,7 +78,7 @@ exports.getPostsByUser = async (req, res) => {
 exports.getPostFeed = async (req, res) => {
   const { following, _id } = req.profile;
   following.push(_id);
-  const posts = await post.find({ postedBy: { $in: following } }).sort({
+  const posts = await Post.find({ postedBy: { $in: following } }).sort({
     createdAt: "desc"
   });
   res.json(posts);
