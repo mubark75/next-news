@@ -1,135 +1,129 @@
-import Typography from "@material-ui/core/Typography";
-import Avatar from "@material-ui/core/Avatar";
-import FormControl from "@material-ui/core/FormControl";
-import Paper from "@material-ui/core/Paper";
-import Input from "@material-ui/core/Input";
-import InputLabel from "@material-ui/core/InputLabel";
-import Button from "@material-ui/core/Button";
-import Snackbar from "@material-ui/core/Snackbar";
-import Lock from "@material-ui/icons/Lock";
-import withStyles from "@material-ui/core/styles/withStyles";
-import { signinUser } from "../lib/auth";
-import Router from "next/router";
+import { Component } from "react";
+import axios from "axios";
+import Layout from "../components/layout";
+import { signin } from "../lib/auth";
+import firebase from "firebase/app";
+import "firebase/auth";
+import "firebase/firestore";
 
-class Signin extends React.Component {
-  state = {
-    email: "",
-    password: "",
-    error: "",
-    openError: false,
-    isLoading: false
-  };
+import clientCredentials from "../credentials/client";
 
-  handleClose = () => this.setState({ openError: false });
+firebase.initializeApp(clientCredentials);
 
-  handleChange = e => this.setState({ [e.target.name]: e.target.value });
+class Signin extends Component {
+  static getInitialProps({ req }) {
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
 
-  handleSubmit = async e => {
-    e.preventDefault();
-    const {
-      state: { email, password }
-    } = this;
-    const user = { email, password };
-    this.setState({ isLoading: true, error: "" });
-    const { error, data } = await signinUser(user);
-    if (!error) {
-      Router.push("/");
-    } else {
-      this.setState({ error: data, openError: true, isLoading: false });
+    const apiUrl = process.browser
+      ? `${protocol}://${window.location.host}/api/signin`
+      : `${protocol}://${req.headers.host}/api/signin`;
+
+    return { apiUrl };
+  }
+
+  constructor(props) {
+    super(props);
+
+    this.state = { username: "", error: "" };
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleChange(event) {
+    this.setState({ username: event.target.value });
+  }
+
+  async handleSubmit(event) {
+    event.preventDefault();
+    this.setState({ error: "" });
+    //const username = this.state.username;
+    //const url = this.props.apiUrl;
+
+    try {
+      //const response = await axios.post(url, { username });
+      const response = await firebase
+        .auth()
+        .signInWithPopup(new firebase.auth.GoogleAuthProvider());
+
+      if (response) {
+        const token = await response.user.getIdToken();
+        signin({ token });
+      } else {
+        console.log("Login failed.");
+        // https://github.com/developit/unfetch#caveats
+        let error = new Error(response.statusText);
+        error.response = response;
+        throw error;
+      }
+    } catch (error) {
+      console.error(
+        "You have an error in your code or there are Network issues.",
+        error
+      );
+      this.setState({ error: error.message });
     }
-  };
+  }
 
   render() {
-    const {
-      props: { classes },
-      state: { error, openError, isLoading }
-    } = this;
     return (
-      <div className={classes.root}>
-        <Paper className={classes.paper}>
-          <Avatar className={classes.avatar}>
-            <Lock />
-          </Avatar>
-          <Typography variant="h5" component="h1">
-            Sign in
-          </Typography>
+      <Layout isAuthenticatd={false}>
+        <div className="login">
+          <form onSubmit={this.handleSubmit}>
+            <label htmlFor="username">GitHub username</label>
 
-          <form onSubmit={this.handleSubmit} className={classes.form}>
-            <FormControl margin="normal" required fullWidth>
-              <InputLabel htmlFor="email">Email</InputLabel>
-              <Input name="email" type="email" onChange={this.handleChange} />
-            </FormControl>
-            <FormControl margin="normal" required fullWidth>
-              <InputLabel htmlFor="password">Password</InputLabel>
-              <Input
-                name="password"
-                type="password"
-                onChange={this.handleChange}
-              />
-            </FormControl>
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              disabled={isLoading}
-              className={classes.submit}
-            >
-              {isLoading ? "Signing in" : "Sign in"}
-            </Button>
-          </form>
-          {/* Error snackbar */}
-          {error && (
-            <Snackbar
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right"
-              }}
-              open={openError}
-              onClose={this.handleClose}
-              autoHideDuration={6000}
-              message={<span className={classes.snack}>{error}</span>}
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={this.state.username}
+              onChange={this.handleChange}
             />
-          )}
-        </Paper>
-      </div>
+
+            <button type="submit">Login</button>
+
+            <p className={`error ${this.state.error && "show"}`}>
+              {this.state.error && `Error: ${this.state.error}`}
+            </p>
+          </form>
+        </div>
+        <style jsx>{`
+          .login {
+            max-width: 340px;
+            margin: 0 auto;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+          }
+
+          form {
+            display: flex;
+            flex-flow: column;
+          }
+
+          label {
+            font-weight: 600;
+          }
+
+          input {
+            padding: 8px;
+            margin: 0.3rem 0 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+          }
+
+          .error {
+            margin: 0.5rem 0 0;
+            display: none;
+            color: brown;
+          }
+
+          .error.show {
+            display: block;
+          }
+        `}</style>
+      </Layout>
     );
   }
 }
 
-const styles = theme => ({
-  root: {
-    width: "auto",
-    display: "block",
-    marginLeft: theme.spacing.unit * 3,
-    marginRight: theme.spacing.unit * 3,
-    [theme.breakpoints.up("md")]: {
-      width: 400,
-      marginLeft: "auto",
-      marginRight: "auto"
-    }
-  },
-  paper: {
-    marginTop: theme.spacing.unit * 8,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: theme.spacing.unit * 2
-  },
-  avatar: {
-    margin: theme.spacing.unit,
-    backgroundColor: theme.palette.secondary.main
-  },
-  form: {
-    width: "100%",
-    marginTop: theme.spacing.unit
-  },
-  submit: {
-    marginTop: theme.spacing.unit * 2
-  },
-  snack: {
-    color: theme.palette.protectedTitle
-  }
-});
-
-export default withStyles(styles)(Signin);
+export default Signin;

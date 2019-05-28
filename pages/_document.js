@@ -7,8 +7,6 @@ import { getSessionFromServer, getUserScript } from "../lib/auth";
 
 class MyDocument extends Document {
   static getInitialProps = ctx => {
-    const user = getSessionFromServer(ctx.req);
-
     // Render app and page and get the context of the page with collected side effects.
     let pageContext;
     const page = ctx.renderPage(Component => {
@@ -20,19 +18,12 @@ class MyDocument extends Document {
     });
 
     return {
-      ...user,
       ...page,
       pageContext,
       // Styles fragment is rendered after the app and page rendering finish.
       styles: (
         <React.Fragment>
-          <style
-            id="jss-server-side"
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{
-              __html: pageContext.sheetsRegistry.toString()
-            }}
-          />
+          <style id="jss-server-side" />
           {flush() || null}
         </React.Fragment>
       )
@@ -40,7 +31,7 @@ class MyDocument extends Document {
   };
 
   render() {
-    const { pageContext, user = {} } = this.props;
+    const { pageContext } = this.props;
 
     return (
       <html lang="en" dir="ltr">
@@ -71,10 +62,10 @@ class MyDocument extends Document {
             content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no"
           />
           {/* PWA primary color */}
-          <meta
+          {/* <meta
             name="theme-color"
             content={pageContext.theme.palette.primary.main}
-          />
+          /> */}
           <meta
             name="description"
             content="A social media site built with Next.js"
@@ -82,7 +73,6 @@ class MyDocument extends Document {
         </Head>
         <body>
           <Main />
-          <script dangerouslySetInnerHTML={{ __html: getUserScript(user) }} />
           <NextScript />
         </body>
       </html>
